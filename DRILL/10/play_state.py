@@ -5,7 +5,7 @@ import logo_state
 import title_state
 import item_state
 import random
-
+import boy_adjust_state
 class Grass:
     def __init__(self):
         self.image = load_image('grass.png')
@@ -15,10 +15,13 @@ class Grass:
 
 class Boy:
     def __init__(self):
-        self.x, self.y = random.randint(100, 200), 90
-        self.frame = 0
+        self.x, self.y = random.randint(0, 800), 90
+        self.frame = random.randint(0, 7)
         self.dir = 1
         self.image = load_image('animation_sheet.png')
+        self.ball_image = load_image('ball21x21.png')
+        self.big_ball_image = load_image('ball41x41.png')
+        self.item = None
 
 
 
@@ -35,6 +38,10 @@ class Boy:
 
 
     def draw(self):
+        if self.item == 'BigBall':
+            self.big_ball_image.draw(self.x+10, self.y+50)
+        elif self.item == 'Ball':
+            self.ball_image.draw(self.x + 10, self.y + 50)
 
         if self.dir == 1:
             self.image.clip_draw(self.frame*100, 100, 100, 100, self.x, self.y)
@@ -50,10 +57,14 @@ def handle_events():
         if event.type == SDL_QUIT:
             game_framework.quit()
         elif event.type == SDL_KEYDOWN:
-            if event.key == SDLK_ESCAPE:
-                game_framework.quit()
-            elif event.key == SDLK_b:
-                game_framework.push_state(item_state)
+            match event.key:
+                case pico2d.SDLK_ESCAPE:
+                    # game_framework_change_state(title_state)
+                    game_framework.quit()
+                case pico2d.SDLK_i:
+                    game_framework.push_state(item_state)
+                case pico2d.SDLK_b:
+                    game_framework.push_state(boy_adjust_state)
 
 
 
@@ -62,49 +73,46 @@ def handle_events():
 
 
 # 게임 초기화 : 객체들을 생성
+boys = [] # 여러 명의 소년들
+
 grass = None
 running = True
-count = 1 # ??
-team = None
 
 def enter():
-    global grass, running, team, count
-    team = [Boy() for i in range(count)] # ??
+    global grass, running
+    boys.append(Boy())
+    boys.append(Boy())
     grass = Grass()
     running = True
 
 
 # 게임 종료 - 객체를 소멸
 def exit():
-    global team, count, grass
-    del team
+    global grass
+    for boy in boys:
+        del boy
     del grass
 
 
 
 def update():
-    global team, count
-
-    for boy in team:
+    for boy in boys:
         boy.update()
 
 
 def draw_world():
-    global team, count, grass
-    grass = Grass()
-
     grass.draw()
-    for boy in team:
+    for boy in boys:
         boy.draw()
 
 def draw():
     # 게임 월드 렌더링
-    global team, count, grass
+    global grass
 
     clear_canvas()
     draw_world()
     grass.draw()
-    for boy in team:
+    for boy in boys:
         boy.draw()
     update_canvas()
 
@@ -116,6 +124,19 @@ def pause():
 def resume():
     global grass
     pass
+
+
+def add_one_boy():
+    boys.append(Boy())
+
+
+def delete_one_boy():
+    if len(boys) > 1:
+        boys.pop() # 리스트의 맨 마지막을 꺼내는 것
+
+def set_all_boys_item(item):
+    for boy in boys:
+        boy.item = item
 
 
 def test_self():
